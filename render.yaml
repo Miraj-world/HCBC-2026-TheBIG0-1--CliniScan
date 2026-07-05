@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: cliniscan-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL_RAW
+        fromDatabase:
+          name: cliniscan-db
+          property: connectionString
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cliniscan-db
+          property: connectionString
+      - key: ALLOWED_ORIGINS
+        value: https://cliniscan-hcbc.netlify.app
+
+databases:
+  - name: cliniscan-db
+    databaseName: cliniscan
+    plan: free

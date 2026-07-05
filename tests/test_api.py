@@ -15,6 +15,28 @@ def test_health_endpoint_reports_provider_config_state():
     assert "providers" in body
 
 
+def test_default_allowed_origins_are_local_web_clients():
+    assert main._allowed_origins() == [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+
+def test_allowed_origins_can_be_configured(monkeypatch):
+    monkeypatch.setenv("ALLOWED_ORIGINS", "https://app.example.com/, https://admin.example.com")
+
+    assert main._allowed_origins() == [
+        "https://app.example.com",
+        "https://admin.example.com",
+    ]
+
+
+def test_audio_upload_suffix_supports_ios_wav_and_m4a():
+    assert main._audio_upload_suffix("recording.wav", "audio/wav") == ".wav"
+    assert main._audio_upload_suffix("recording.m4a", "audio/mp4") == ".m4a"
+    assert main._audio_upload_suffix("recording", "audio/webm") == ".webm"
+
+
 def test_demo_scenario_uses_cached_response_without_keys():
     response = client.post(
         "/analyze",

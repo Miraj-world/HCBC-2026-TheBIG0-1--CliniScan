@@ -24,9 +24,35 @@ load_dotenv()
 
 app = FastAPI(title="CliniScan", version="2.0")
 
+
+def _allowed_origins() -> list[str]:
+    raw = os.getenv("ALLOWED_ORIGINS", "").strip()
+    if raw:
+        return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+    return [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+
+def _audio_upload_suffix(filename: str | None, content_type: str | None) -> str:
+    suffix = Path(filename or "").suffix.lower()
+    if suffix in {".wav", ".webm", ".m4a", ".mp3", ".mp4"}:
+        return suffix
+
+    mime_suffixes = {
+        "audio/wav": ".wav",
+        "audio/x-wav": ".wav",
+        "audio/webm": ".webm",
+        "audio/mp4": ".m4a",
+        "audio/m4a": ".m4a",
+        "audio/mpeg": ".mp3",
+    }
+    return mime_suffixes.get((content_type or "").lower(), ".webm")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -104,7 +130,7 @@ async def transcribe(audio: UploadFile = File(...)):
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="Audio upload is empty")
 
-    suffix = ".wav" if (audio.filename or "").lower().endswith(".wav") else ".webm"
+    suffix = _audio_upload_suffix(audio.filename, audio.content_type)
     tmp_path = ""
     try:
         import tempfile

@@ -10,7 +10,31 @@ frontend/dist/
 
 # Env
 backend/.env
+backend/.env.*
+!backend/.env.example
+*.p8
+*.p12
+*.mobileprovision
+
+# iOS
+ios/*.xcodeproj/
+ios/DerivedData/
+ios/build/
+ios/*.xcarchive/
+ios/*.ipa
+
+# Android
+android/.gradle/
+android/local.properties
+android/**/build/
+android/*.jks
+android/*.keystore
+android/*.aab
+android/*.apk
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Netlify folder
+.netlify
