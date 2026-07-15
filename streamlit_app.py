@@ -124,11 +124,20 @@ with st.form("cliniscan-intake"):
         known_conditions = st.text_input("Known conditions (optional)")
         medications = st.text_input("Current medications (optional)")
 
-    image = st.file_uploader(
-        "Optional image",
-        type=["jpg", "jpeg", "png", "webp"],
-        help="Avoid uploading identifying information. Images are sent to the configured CliniScan API.",
-    )
+    st.markdown("**Optional image**")
+    st.caption("Upload an existing image or use your device camera to take one now.")
+    upload_tab, camera_tab = st.tabs(["Upload image", "Take a picture"])
+    with upload_tab:
+        uploaded_image = st.file_uploader(
+            "Choose an image",
+            type=["jpg", "jpeg", "png", "webp"],
+            help="Avoid uploading identifying information. Images are sent to the configured CliniScan API.",
+        )
+    with camera_tab:
+        camera_image = st.camera_input(
+            "Take a picture",
+            help="Your browser will ask for camera permission. The captured image is sent to the configured CliniScan API.",
+        )
     consent = st.checkbox("I understand this is informational support, not a medical diagnosis.")
     submitted = st.form_submit_button("Analyze symptoms", type="primary", use_container_width=True)
 
@@ -151,6 +160,7 @@ if submitted:
             "provider": provider,
             "demo_scenario": demo_scenario,
         }
+        image = camera_image or uploaded_image
         if image is not None:
             payload["image_base64"] = base64.b64encode(image.getvalue()).decode("ascii")
             payload["image_mime"] = image.type or "image/jpeg"
@@ -169,4 +179,3 @@ if submitted:
             st.error(f"CliniScan could not complete the assessment ({exc.response.status_code}). {detail}")
         except (httpx.HTTPError, ValueError) as exc:
             st.error(f"The CliniScan service is temporarily unavailable: {exc}")
-
