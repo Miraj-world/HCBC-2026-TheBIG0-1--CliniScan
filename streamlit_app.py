@@ -9,6 +9,7 @@ import streamlit as st
 
 
 DEFAULT_API_URL = "https://cliniscan-api.onrender.com"
+APP_VERSION = "2026.07.15-camera"
 
 
 def _api_url() -> str:
@@ -105,6 +106,7 @@ with st.sidebar:
     )
     provider = st.selectbox("AI provider", ["anthropic", "openai"])
     st.caption(f"API: {_api_url()}")
+    st.caption(f"App version: {APP_VERSION}")
 
 with st.form("cliniscan-intake"):
     st.subheader("Symptom intake")
