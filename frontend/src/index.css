@@ -780,6 +780,53 @@ input[type="range"] {
   text-align: center;
 }
 
+.image-source-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.image-source-divider {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.camera-capture-panel {
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #07111f;
+}
+
+.camera-preview {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  background: #020617;
+}
+
+.camera-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--surface);
+}
+
+.camera-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 .upload-prompt small {
   color: var(--subtle);
 }
@@ -1864,6 +1911,18 @@ input[type="range"] {
 }
 
 @media (max-width: 720px) {
+  .image-source-options {
+    grid-template-columns: 1fr;
+  }
+
+  .image-source-divider {
+    text-align: center;
+  }
+
+  .camera-actions {
+    flex-direction: column;
+  }
+
   body {
     font-size: 15px;
   }

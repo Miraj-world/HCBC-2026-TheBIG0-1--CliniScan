@@ -44,7 +44,7 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     fetch(`${API_URL}/health`, { signal: controller.signal })
       .then((response) => {
@@ -90,7 +90,7 @@ export default function App() {
 
   async function ensureBackendAvailable() {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const timeout = setTimeout(() => controller.abort(), 90000);
     try {
       const res = await fetch(`${API_URL}/health`, {
         method: "GET",
@@ -100,7 +100,7 @@ export default function App() {
         throw new Error();
       }
     } catch (_error) {
-      throw new Error(`Backend is unreachable at ${API_URL}. Start the API server and try again.`);
+      throw new Error("CliniScan could not reach the analysis service. Please wait a moment and try again.");
     } finally {
       clearTimeout(timeout);
     }
@@ -195,7 +195,7 @@ export default function App() {
           </div>
           <div className={`api-status status-${backendStatus}`}>
             <span className="status-dot" aria-hidden="true" />
-            <span>{backendStatus === "connected" ? "Backend connected" : backendStatus === "checking" ? "Checking backend" : "Local backend unavailable"}</span>
+            <span>{backendStatus === "connected" ? "Analysis service ready" : backendStatus === "checking" ? "Waking analysis service" : "Analysis service unavailable"}</span>
             <small>{status.apiUrl}</small>
           </div>
         </div>

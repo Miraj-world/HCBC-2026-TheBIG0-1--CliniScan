@@ -29,6 +29,8 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
   const [imagePreview, setImagePreview] = useState("");
   const [imageError, setImageError] = useState("");
   const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [voiceState, setVoiceState] = useState("idle");
@@ -36,6 +38,8 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [voiceToast, setVoiceToast] = useState(null);
   const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const cameraStreamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -67,8 +71,18 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
         clearTimeout(toastTimeoutRef.current);
       }
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
+
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && cameraStreamRef.current) {
+      videoRef.current.srcObject = cameraStreamRef.current;
+      videoRef.current.play().catch(() => {
+        setCameraError("The camera preview could not start. Try uploading an image instead.");
+      });
+    }
+  }, [cameraOpen]);
 
   useEffect(() => {
     let interval;
@@ -340,6 +354,62 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
     }
   }
 
+  function closeCamera() {
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+    setCameraOpen(false);
+  }
+
+  async function openCamera() {
+    setCameraError("");
+    if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+      setCameraError("Camera capture requires a secure browser connection. Upload an image instead.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      cameraStreamRef.current = stream;
+      setCameraOpen(true);
+    } catch (err) {
+      const denied = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
+      setCameraError(
+        denied
+          ? "Camera permission was blocked. Allow camera access or upload an image instead."
+          : "The camera is unavailable. Try uploading an image instead.",
+      );
+    }
+  }
+
+  function capturePhoto() {
+    const video = videoRef.current;
+    if (!video?.videoWidth || !video?.videoHeight) {
+      setCameraError("The camera is still starting. Wait a moment and try again.");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          setCameraError("The photo could not be captured. Try again or upload an image.");
+          return;
+        }
+        selectImageFile(new File([blob], `cliniscan-photo-${Date.now()}.jpg`, { type: "image/jpeg" }));
+        closeCamera();
+      },
+      "image/jpeg",
+      0.9,
+    );
+  }
+
   async function submitForm() {
     if (!canSubmit) return;
     setIsSubmitting(true);
@@ -522,6 +592,21 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
             <p>Optional. A clear image can help the system compare visual evidence with the symptom description.</p>
           </div>
 
+          {cameraOpen ? (
+            <div className="camera-capture-panel">
+              <video ref={videoRef} className="camera-preview" playsInline muted aria-label="Camera preview" />
+              <div className="camera-actions">
+                <button type="button" className="primary-button camera-button" onClick={capturePhoto}>
+                  <Camera size={18} strokeWidth={2.4} aria-hidden="true" />
+                  Take photo
+                </button>
+                <button type="button" className="secondary-button" onClick={closeCamera}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <div
             className={`upload-dropzone ${isDraggingImage ? "dragging" : ""} ${imagePreview ? "has-image" : ""}`}
             onDragOver={(event) => {
@@ -554,17 +639,27 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
                 </div>
               </div>
             ) : (
-              <button type="button" className="upload-prompt" onClick={() => fileInputRef.current?.click()}>
-                <span className="upload-icon" aria-hidden="true">
-                  <FileImage size={22} strokeWidth={2.2} />
-                </span>
-                <strong>Drop an image here or browse</strong>
-                <small>JPG, PNG, or WEBP. Max 10 MB.</small>
-              </button>
+              <div className="image-source-options">
+                <button type="button" className="upload-prompt" onClick={() => fileInputRef.current?.click()}>
+                  <span className="upload-icon" aria-hidden="true">
+                    <FileImage size={22} strokeWidth={2.2} />
+                  </span>
+                  <strong>Upload an image</strong>
+                  <small>JPG, PNG, or WEBP. Max 10 MB.</small>
+                </button>
+                <span className="image-source-divider" aria-hidden="true">or</span>
+                <button type="button" className="upload-prompt" onClick={openCamera}>
+                  <span className="upload-icon" aria-hidden="true">
+                    <Camera size={22} strokeWidth={2.2} />
+                  </span>
+                  <strong>Open camera</strong>
+                  <small>Take a new photo with this device.</small>
+                </button>
+              </div>
             )}
           </div>
 
-          {imageError ? <p className="field-error">{imageError}</p> : null}
+          {imageError || cameraError ? <p className="field-error">{imageError || cameraError}</p> : null}
           {!imagePreview ? <p className="note">No image selected. Text-only triage is supported.</p> : null}
         </div>
 
