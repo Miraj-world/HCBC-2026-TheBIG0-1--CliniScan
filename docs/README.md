@@ -5,6 +5,7 @@ This folder is for supporting project documentation. The main setup and run inst
 ## Documentation Index
 
 - [`web-deployment.md`](web-deployment.md): public React website, Netlify deployment, Render API connection, camera requirements, and production verification.
+- [`analytics-privacy.md`](analytics-privacy.md): first-party usage analytics, prohibited medical fields, aggregate reporting, and privacy safeguards.
 - [`android/`](android/): Android build and distribution notes.
 - [`ios/`](ios/): iOS project, privacy, signing, testing, and backend deployment notes.
 

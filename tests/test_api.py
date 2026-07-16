@@ -15,6 +15,68 @@ def test_health_endpoint_reports_provider_config_state():
     assert "providers" in body
 
 
+def test_analytics_event_accepts_only_anonymous_product_metadata(monkeypatch):
+    recorded = {}
+
+    async def fake_record_event(**values):
+        recorded.update(values)
+
+    monkeypatch.setattr(main, "record_event", fake_record_event)
+    response = client.post(
+        "/analytics/events",
+        json={
+            "event": "assessment_completed",
+            "session_id": "7efac080-309e-4c9f-a719-cc54a96c3359",
+            "image_used": True,
+            "duration_bucket": "10_to_30s",
+        },
+    )
+
+    assert response.status_code == 204
+    assert recorded == {
+        "event_name": "assessment_completed",
+        "session_id": "7efac080-309e-4c9f-a719-cc54a96c3359",
+        "image_used": True,
+        "duration_bucket": "10_to_30s",
+        "error_category": None,
+    }
+
+
+def test_analytics_event_rejects_unapproved_fields():
+    response = client.post(
+        "/analytics/events",
+        json={
+            "event": "page_view",
+            "session_id": "7efac080-309e-4c9f-a719-cc54a96c3359",
+            "symptom_text": "private medical content",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_analytics_summary_requires_admin_token(monkeypatch):
+    monkeypatch.setenv("ANALYTICS_ADMIN_TOKEN", "private-summary-token")
+    response = client.get("/analytics/summary")
+    assert response.status_code == 401
+
+
+def test_analytics_summary_returns_aggregates(monkeypatch):
+    monkeypatch.setenv("ANALYTICS_ADMIN_TOKEN", "private-summary-token")
+
+    async def fake_summary(days):
+        return {"days": days, "events": {"page_view": {"events": 4, "unique_sessions": 3}}}
+
+    monkeypatch.setattr(main, "analytics_summary", fake_summary)
+    response = client.get(
+        "/analytics/summary?days=7",
+        headers={"X-Analytics-Token": "private-summary-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["events"]["page_view"]["unique_sessions"] == 3
+
+
 def test_default_allowed_origins_are_local_web_clients():
     assert main._allowed_origins() == [
         "http://localhost:3000",

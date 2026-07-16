@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 UrgencyLevel = Literal["low", "medium", "high"]
@@ -33,6 +33,29 @@ class AnalyzeRequest(BaseModel):
     image_mime: str = "image/jpeg"
     demo_scenario: Optional[int] = Field(default=None, ge=1, le=3)
     provider: ProviderType = "anthropic"
+
+
+AnalyticsEventName = Literal[
+    "page_view",
+    "assessment_started",
+    "assessment_completed",
+    "assessment_failed",
+    "image_selected",
+    "camera_opened",
+    "voice_used",
+    "report_downloaded",
+    "report_shared",
+]
+
+
+class AnalyticsEventRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: AnalyticsEventName
+    session_id: str = Field(min_length=16, max_length=100)
+    image_used: Optional[bool] = None
+    duration_bucket: Optional[Literal["under_10s", "10_to_30s", "30_to_90s", "over_90s"]] = None
+    error_category: Optional[Literal["network", "service", "validation", "unknown"]] = None
 
 
 class SafetyOverrideOutput(BaseModel):

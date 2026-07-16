@@ -71,7 +71,7 @@ function EmptyPanel({ children }) {
   return <p className="empty-copy">{children}</p>;
 }
 
-export default function ResultsPanel({ data, onReset }) {
+export default function ResultsPanel({ data, onReset, onAnalytics }) {
   const [showSubmittedInput, setShowSubmittedInput] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
   const diagnosis = data.diagnosis || {};
@@ -121,11 +121,13 @@ export default function ResultsPanel({ data, onReset }) {
           title: "CliniScan Report",
           text: shareText,
         });
+        onAnalytics?.("report_shared");
         setTransientMessage("Report shared.");
         return;
       }
 
       await navigator.clipboard.writeText(shareText);
+      onAnalytics?.("report_shared");
       setTransientMessage("Report copied to clipboard.");
     } catch (_error) {
       setTransientMessage("Share failed. Please try again.");
@@ -335,6 +337,7 @@ export default function ResultsPanel({ data, onReset }) {
       drawImageSection();
 
       pdf.save(`cliniscan-report-${Date.now()}.pdf`);
+      onAnalytics?.("report_downloaded");
       setTransientMessage("PDF downloaded.");
     } catch (_error) {
       setTransientMessage("Unable to generate PDF.");

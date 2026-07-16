@@ -58,6 +58,8 @@ Render builds the backend from `backend/Dockerfile` using `render.yaml`. Product
 - `DATABASE_URL`
 - `DATABASE_URL_RAW`
 - `ALLOWED_ORIGINS=https://cliniscan-hcbc.netlify.app`
+- `ANALYTICS_ADMIN_TOKEN` with a long random value used only to read aggregate reports
+- `ANALYTICS_HASH_SALT` with a separate long random value used to hash temporary session IDs
 
 Render's free tier may sleep while idle. The React UI displays a wake-up state and allows
 up to 90 seconds for the first analysis request to reach the service.
@@ -103,3 +105,7 @@ Verified on July 15, 2026:
 CliniScan is triage support, not a diagnosis tool. Users should avoid including identifying
 information in images. The public interface must continue to display the medical disclaimer
 and direct urgent or life-threatening symptoms to emergency services.
+
+Product analytics is first-party and intentionally excludes assessment content. See
+[`analytics-privacy.md`](analytics-privacy.md) before changing the tracked event schema or
+adding any third-party tracking service.

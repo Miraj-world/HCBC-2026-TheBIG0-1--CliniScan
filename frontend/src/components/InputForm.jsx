@@ -15,7 +15,7 @@ import {
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
-export default function InputForm({ onSubmit, error, apiUrl }) {
+export default function InputForm({ onSubmit, error, apiUrl, onAnalytics }) {
   const [formData, setFormData] = useState({
     symptom_text: "",
     body_location: "",
@@ -294,6 +294,7 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
       }
 
       setField("symptom_text", data.clinical_note || data.raw_transcript || "");
+      onAnalytics?.("voice_used");
       setVoiceState("success");
       resetVoiceAfter(1500);
     } catch (err) {
@@ -340,6 +341,7 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
 
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+    onAnalytics?.("image_selected");
   }
 
   function removeImage() {
@@ -362,6 +364,7 @@ export default function InputForm({ onSubmit, error, apiUrl }) {
 
   async function openCamera() {
     setCameraError("");
+    onAnalytics?.("camera_opened");
     if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
       setCameraError("Camera capture requires a secure browser connection. Upload an image instead.");
       return;

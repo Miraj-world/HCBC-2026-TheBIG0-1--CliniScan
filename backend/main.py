@@ -7,7 +7,7 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, Header, HTTPException, Query, Response, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
 from layers.clinical_reasoning import generate_clinical_reasoning
@@ -18,7 +18,8 @@ from layers.quality_gate import assess_data_quality
 from layers.safety_override import run_safety_override
 from layers.symptom_structurer import DEFAULT_STRUCTURED_OUTPUT, structure_symptoms
 from layers.vision_extractor import extract_vision_features
-from models.schemas import AnalyzeRequest, FullResponse, SymptomOutput, VisionOutput
+from analytics import analytics_summary, record_event
+from models.schemas import AnalyticsEventRequest, AnalyzeRequest, FullResponse, SymptomOutput, VisionOutput
 
 load_dotenv()
 
@@ -59,6 +60,35 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent
 CACHE_DIR = BASE_DIR / "cache"
+
+
+@app.post("/analytics/events", status_code=204)
+async def create_analytics_event(event: AnalyticsEventRequest):
+    try:
+        await record_event(
+            event_name=event.event,
+            session_id=event.session_id,
+            image_used=event.image_used,
+            duration_bucket=event.duration_bucket,
+            error_category=event.error_category,
+        )
+    except Exception:
+        # Analytics must never interrupt the clinical workflow.
+        return Response(status_code=204)
+    return Response(status_code=204)
+
+
+@app.get("/analytics/summary")
+async def get_analytics_summary(
+    days: int = Query(default=30, ge=1, le=365),
+    x_analytics_token: str | None = Header(default=None),
+):
+    expected_token = os.getenv("ANALYTICS_ADMIN_TOKEN", "").strip()
+    if not expected_token:
+        raise HTTPException(status_code=503, detail="Analytics summary is not configured")
+    if x_analytics_token != expected_token:
+        raise HTTPException(status_code=401, detail="Invalid analytics token")
+    return await analytics_summary(days)
 
 
 def _provider_key(provider: str) -> str:

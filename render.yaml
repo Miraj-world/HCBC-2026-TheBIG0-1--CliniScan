@@ -20,6 +20,10 @@ services:
           property: connectionString
       - key: ALLOWED_ORIGINS
         value: https://cliniscan-hcbc.netlify.app
+      - key: ANALYTICS_ADMIN_TOKEN
+        sync: false
+      - key: ANALYTICS_HASH_SALT
+        sync: false
 
 databases:
   - name: cliniscan-db

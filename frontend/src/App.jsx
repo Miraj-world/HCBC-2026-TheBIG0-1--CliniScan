@@ -4,6 +4,7 @@ import logoUrl from "./assets/CliniScanLogo.png";
 import InputForm from "./components/InputForm";
 import PipelineProgress from "./components/PipelineProgress";
 import ResultsPanel from "./components/ResultsPanel";
+import { durationBucket, trackEvent } from "./analytics";
 
 const STAGES = [
   "Analyzing image...",
@@ -43,6 +44,7 @@ export default function App() {
   const timerRef = useRef(null);
 
   useEffect(() => {
+    trackEvent(API_URL, "page_view");
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -107,10 +109,13 @@ export default function App() {
   }
 
   async function runAnalysis(formData, imageFile) {
+    const analysisStartedAt = Date.now();
+    trackEvent(API_URL, "assessment_started", { image_used: Boolean(imageFile) });
     setError(null);
     try {
       await ensureBackendAvailable();
     } catch (err) {
+      trackEvent(API_URL, "assessment_failed", { error_category: "network" });
       setError(err.message || "Backend is unreachable");
       setView("input");
       return;
@@ -144,6 +149,10 @@ export default function App() {
       };
 
       const response = await callAnalyze(payload);
+      trackEvent(API_URL, "assessment_completed", {
+        image_used: Boolean(imageFile),
+        duration_bucket: durationBucket(Date.now() - analysisStartedAt),
+      });
       setCurrentStage(STAGES.length - 1);
       setTimeout(() => {
         if (timerRef.current) {
@@ -167,6 +176,7 @@ export default function App() {
         setView("results");
       }, 750);
     } catch (err) {
+      trackEvent(API_URL, "assessment_failed", { error_category: "service" });
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -205,7 +215,7 @@ export default function App() {
 
       <main className="page">
         {view === "input" && (
-          <InputForm onSubmit={runAnalysis} error={error} apiUrl={API_URL} />
+          <InputForm onSubmit={runAnalysis} error={error} apiUrl={API_URL} onAnalytics={(event, properties) => trackEvent(API_URL, event, properties)} />
         )}
 
         {view === "processing" && (
@@ -213,7 +223,7 @@ export default function App() {
         )}
 
         {view === "results" && results && (
-          <ResultsPanel data={results} onReset={resetAll} />
+          <ResultsPanel data={results} onReset={resetAll} onAnalytics={(event) => trackEvent(API_URL, event)} />
         )}
       </main>
     </div>

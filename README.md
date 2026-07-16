@@ -41,6 +41,11 @@ CliniScan is **not** a diagnosis tool and not a replacement for licensed care.
 - Report actions (top-right in Reports view):
   - Download PDF
   - Share (native share sheet, clipboard fallback)
+- Privacy-minimal product analytics:
+  - anonymous page views and assessment funnel events
+  - image, camera, and voice feature-use flags without medical content
+  - hashed per-tab session identifiers
+  - protected aggregate summary endpoint
 
 ## Tech Stack
 
@@ -221,6 +226,16 @@ npm run dev
 - Camera access requires HTTPS in production and explicit browser permission from the user.
 - A captured photo is converted to JPEG and sent through the same `/analyze` image pipeline as an uploaded file.
 - If an image is unavailable, unsupported, or not medically relevant, CliniScan continues in text-only mode and reports that limitation.
+
+## Privacy-Minimal Analytics
+
+CliniScan records only allowlisted product events such as `page_view`,
+`assessment_started`, and `assessment_completed`. It does **not** send symptom text,
+images, transcripts, body location, age, medications, diagnoses, or API payloads to the
+analytics table.
+
+See [`docs/analytics-privacy.md`](docs/analytics-privacy.md) for the event schema, privacy
+boundaries, retention guidance, and protected summary API.
 
 ## Demo Video
 
