@@ -2,6 +2,14 @@
 
 CliniScan is a layered multimodal triage support app for hackathon/demo use. It combines typed or voice-captured symptom text, structured intake fields, optional image analysis, and similar-case retrieval to generate urgency guidance and a structured report.
 
+## Live Website
+
+**Use CliniScan:** [https://cliniscan-hcbc.netlify.app/](https://cliniscan-hcbc.netlify.app/)
+
+The public product is the polished React website hosted on Netlify. It connects to the
+FastAPI analysis service hosted on Render at
+[https://cliniscan-api.onrender.com](https://cliniscan-api.onrender.com/health).
+
 ## Safety
 
 CliniScan is **not** a diagnosis tool and not a replacement for licensed care.
@@ -12,7 +20,10 @@ CliniScan is **not** a diagnosis tool and not a replacement for licensed care.
 
 - Structured intake: symptom text, body location, duration, pain severity (1-10), age, known conditions, medications.
 - Voice-enabled symptom entry: users can type symptoms manually or record audio in the browser. The backend transcribes audio with OpenAI Whisper and optionally formats the transcript into concise clinical language with Claude before filling the symptom field.
-- Optional image upload (`jpg/png/webp`) for visual evidence extraction.
+- Optional image input for visual evidence extraction:
+  - upload an existing `jpg/png/webp` image
+  - open the device camera and capture a new photo
+  - reject unsupported, oversized, or medically irrelevant images with a safe fallback
 - Layered backend pipeline:
   - safety override
   - symptom structuring
@@ -54,15 +65,58 @@ CliniScan/
     models/
   demo/
     demo.mp4
+  android/
+    settings.gradle
+    app/
+  ios/
+    project.yml
+    CliniScan/
+    CliniScanTests/
+    CliniScanUITests/
   frontend/
     package.json
     src/
+  docs/android/
+  docs/ios/
   tests/
   README.md
   requirements.txt
 ```
 
+The native Android app lives in `android/` and the native iOS scaffold lives in `ios/`. Both are intentionally separate from the React website in `frontend/`.
+
 ## Setup
+
+### Public React website
+
+The production website uses React + Vite and is deployed on Netlify. The frontend build
+must receive the hosted API URL at build time:
+
+```env
+VITE_API_URL=https://cliniscan-api.onrender.com
+```
+
+Deployment details and verification steps are documented in
+[`docs/web-deployment.md`](docs/web-deployment.md).
+
+### Optional Streamlit prototype
+
+The repository also includes `streamlit_app.py` as a simplified prototype. It is not the
+primary public UI and does not reproduce the polished React design.
+
+Run it locally:
+
+```powershell
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python -m streamlit run streamlit_app.py
+```
+
+For Streamlit Community Cloud, create an app from this repository and set the main file
+path to `streamlit_app.py`. To use a different backend, add this app secret:
+
+```toml
+CLINISCAN_API_URL = "https://your-api.example.com"
+```
 
 ### 1) Backend
 
@@ -160,6 +214,14 @@ npm run dev
 - Voice capture is optional. The textarea remains editable before and after transcription, and failed voice capture does not block normal form submission.
 - `/transcribe` requires `OPENAI_API_KEY`. If `ANTHROPIC_API_KEY` is missing, transcription still works and the raw transcript is returned as the clinical note fallback.
 
+## Camera and Image Notes
+
+- **Upload an image** accepts JPG, PNG, and WEBP files up to 10 MB.
+- **Open camera** uses the browser `getUserMedia` API and prefers the rear-facing camera on supported mobile devices.
+- Camera access requires HTTPS in production and explicit browser permission from the user.
+- A captured photo is converted to JPEG and sent through the same `/analyze` image pipeline as an uploaded file.
+- If an image is unavailable, unsupported, or not medically relevant, CliniScan continues in text-only mode and reports that limitation.
+
 ## Demo Video
 
 The project demo video is stored at [`demo/demo.mp4`](demo/demo.mp4). The file is H.264/AAC MP4 and is kept under GitHub's 100 MB file limit.
@@ -219,4 +281,11 @@ cd frontend
 npm run build
 ```
 
-Current baseline: backend tests passing and frontend production build passing.
+Current verified baseline:
+
+- 23 backend tests passing
+- frontend production build passing
+- live Netlify website connected to the Render API
+- live symptom-to-results workflow passing
+- image payload, relevance gate, and text-only fallback passing
+- desktop and mobile layouts passing browser QA
